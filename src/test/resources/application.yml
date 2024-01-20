@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+aws:
+  cognito:
+    client:
+      id: ${AWS_COGNITO_APP_CLIENT_ID}
+    identity:
+      pool:
+        id: ${AWS_COGNITO_IDENTITY_POOL_ID}
+    redirect:
+      uri: ${AWS_COGNITO_REDIRECT_URI}
+    domain: ${AWS_COGNITO_DOMAIN}
+  access:
+    key:
+      secret: ${AWS_SECRET_ACCESS_KEY}
+      id: ${AWS_ACCESS_KEY_ID}
+  region: ${AWS_REGION}
