@@ -16,3 +16,9 @@ aws:
       secret: ${AWS_SECRET_ACCESS_KEY}
       id: ${AWS_ACCESS_KEY_ID}
   region: ${AWS_REGION}
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379

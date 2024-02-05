@@ -13,3 +13,8 @@ aws:
       secret: ${AWS_SECRET_ACCESS_KEY}
       id: ${AWS_ACCESS_KEY_ID}
   region: ${AWS_REGION}
+spring:
+  data:
+    redis:
+      host: ela-re-1ciskp39fodom.ob79cw.0001.eun1.cache.amazonaws.com
+      port: 6379

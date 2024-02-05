@@ -19,6 +19,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import store.glacies.authentication.models.AuthenticationInfo;
+import store.glacies.authentication.repositories.AuthenticationRepository;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,12 +33,16 @@ public class AuthenticationService {
 
     private final CloseableHttpClient httpClient;
 
+    private final AuthenticationRepository repository;
+
     @Autowired
 
     public AuthenticationService(CognitoIdentityProviderClient cognitoClient,
-                                 CloseableHttpClient httpClient) {
+                                 CloseableHttpClient httpClient,
+                                 AuthenticationRepository repository) {
         this.cognitoClient = cognitoClient;
         this.httpClient = httpClient;
+        this.repository = repository;
     }
 
     @Value("${aws.cognito.client.id}")
@@ -48,8 +54,6 @@ public class AuthenticationService {
     @Value("${aws.cognito.redirect.uri}")
     private String REDIRECT_URI;
 
-
-    /*TODO AFTER AUTHENTICATION STORE ALL THE TOKENS IN REDIS CASH*/
 
     /*uses AWS Cognito to finish authentication process for a user with the help of
      * Federated Identity providers (such as Google and Facebook). The access code
@@ -88,7 +92,7 @@ public class AuthenticationService {
     * for future use in authentication and authorization low*/
 
     /*TODO CONSIDER GENERATING MORE SAFE ID TOKEN IN COMPARISON TO PROVIDED ONE*/
-    public List<String> loginWithFederatedProvider(String code) {
+    public void loginWithFederatedProvider(String code) {
             JSONObject json = sendAuthenticate(code);
             String accessToken = json.getString("access_token");
             String idToken = json.getString("id_token");
@@ -97,7 +101,15 @@ public class AuthenticationService {
             String sub = jwt.getClaim("sub").asString();  // Get the sub claim
             String username = jwt.getClaim("cognito:username").asString();
             List<String> groups = jwt.getClaim("cognito:groups").asList(String.class);
-            return List.of(accessToken,idToken);
+            AuthenticationInfo authInfo = AuthenticationInfo.builder()
+                .UUID(sub)
+                .username(username)
+                .refreshToken(refreshToken)
+                .idToken(idToken)
+                .accessToken(accessToken)
+                //.role(jwt.getClaim())
+                .build();
+            repository.save(authInfo);
     }
 
 
@@ -133,10 +145,21 @@ public class AuthenticationService {
             cognitoClient.adminAddUserToGroup(addUserToGroupRequest);
         } else {
             // Handle the case where the user does not exist or there are multiple users with the same sub
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user does not exist or there are multiple users with the same username.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The user does not exist or there are multiple users with the same username.");
         }
-        //TODO HANDLE ISSUES PROPERLY
+
+        AuthenticationInfo authInfo = AuthenticationInfo.builder()
+                .UUID(sub)
+                .username(username)
+                .refreshToken(refreshToken)
+                .idToken(idToken)
+                .accessToken(accessToken)
+                .role(groupName)
+                .build();
+        repository.save(authInfo);
     }
+
 
 }
 
